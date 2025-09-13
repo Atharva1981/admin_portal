@@ -169,16 +169,6 @@ const Dashboard: React.FC = () => {
               Internal Issues
             </button>
             <button
-              onClick={() => setActiveTab('user-complaints')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'user-complaints'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              User Complaints
-            </button>
-            <button
               onClick={() => setActiveTab('user-test')}
               className={`py-4 px-1 border-b-2 font-medium text-sm ${
                 activeTab === 'user-test'
@@ -187,16 +177,6 @@ const Dashboard: React.FC = () => {
               }`}
             >
               User Test
-            </button>
-            <button
-              onClick={() => setActiveTab('dept-mapping')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'dept-mapping'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              Dept Mapping
             </button>
           </nav>
         </div>

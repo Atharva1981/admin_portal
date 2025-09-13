@@ -1,16 +1,11 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { Filter, Search, Download, Eye, MapPin, Building } from 'lucide-react';
-import DataTable from '../UI/DataTable';
+import React, { useState, useMemo } from 'react';
+import { Filter, Search, Download, Eye } from 'lucide-react';
 import IssueModal from '../UI/IssueModal';
 import { mockIssues } from '../../data/mockData';
-import { Issue, User } from '../../types';
-import { useAuth } from '../../contexts/AuthContext';
-import { mapComplaintToDepartmentFrontend, DepartmentMappingResult } from '../../services/departmentMappingService';
-import { fetchUserComplaints, UserComplaint } from '../../services/userComplaintsService';
+import { Issue } from '../../types';
 
 const IssueManagement: React.FC = () => {
-  const { user } = useAuth();
-  const [userComplaints, setUserComplaints] = useState<UserComplaint[]>([]);
+  const [issues] = useState<Issue[]>(mockIssues);
   const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [filters, setFilters] = useState({
@@ -20,9 +15,6 @@ const IssueManagement: React.FC = () => {
     status: ''
   });
   const [searchTerm, setSearchTerm] = useState('');
-  const [departmentMappings, setDepartmentMappings] = useState<Map<string, DepartmentMappingResult>>(new Map());
-  const [mappingLoading, setMappingLoading] = useState(false);
-  const [loadingComplaints, setLoadingComplaints] = useState(false);
 
   const categories = [
     'All',

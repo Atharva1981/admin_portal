@@ -1,13 +1,50 @@
-import React from 'react';
-import { MapPin, Filter } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { MapPin, Filter, RefreshCw } from 'lucide-react';
+import { fetchUserComplaints, UserComplaint } from '../../services/userComplaintsService';
 
 const IssuesMap: React.FC = () => {
-  const mockIssuePoints = [
-    { id: 1, lat: 40.7128, lng: -74.0060, type: 'Pothole', status: 'Open' },
-    { id: 2, lat: 40.7589, lng: -73.9851, type: 'Streetlight', status: 'In Progress' },
-    { id: 3, lat: 40.7505, lng: -73.9934, type: 'Garbage', status: 'Resolved' },
-    { id: 4, lat: 40.7614, lng: -73.9776, type: 'Water Leakage', status: 'Escalated' },
-  ];
+  const [userComplaints, setUserComplaints] = useState<UserComplaint[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+
+  // Load user complaints for map display
+  useEffect(() => {
+    loadComplaints();
+    
+    // Set up auto-refresh every 30 seconds for live updates
+    const interval = setInterval(() => {
+      loadComplaints();
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const loadComplaints = async () => {
+    try {
+      setLoading(true);
+      const complaints = await fetchUserComplaints({ limitCount: 100 });
+      setUserComplaints(complaints);
+      setLastUpdated(new Date());
+    } catch (error) {
+      console.error('Error loading complaints for map:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Convert complaints to map points
+  const issuePoints = userComplaints
+    .filter(complaint => complaint.latitude && complaint.longitude)
+    .map(complaint => ({
+      id: complaint.complaintId,
+      lat: complaint.latitude,
+      lng: complaint.longitude,
+      type: complaint.category,
+      status: complaint.status || 'Open',
+      description: complaint.description,
+      address: complaint.address,
+      createdAt: complaint.createdAt
+    }));
 
   const getMarkerColor = (status: string) => {
     switch (status) {
@@ -24,12 +61,29 @@ const IssuesMap: React.FC = () => {
       <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold text-gray-900">Live Issues Map</h3>
-          <p className="text-sm text-gray-600">Visualize issues by location</p>
+          <p className="text-sm text-gray-600">
+            Visualize issues by location • {issuePoints.length} active issues
+            {lastUpdated && (
+              <span className="ml-2 text-xs text-gray-500">
+                Last updated: {lastUpdated.toLocaleTimeString()}
+              </span>
+            )}
+          </p>
         </div>
-        <button className="flex items-center space-x-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors">
-          <Filter size={16} />
-          <span>Filters</span>
-        </button>
+        <div className="flex items-center space-x-2">
+          <button 
+            onClick={loadComplaints}
+            disabled={loading}
+            className="flex items-center space-x-2 px-3 py-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition-colors disabled:opacity-50"
+          >
+            <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
+            <span>Refresh</span>
+          </button>
+          <button className="flex items-center space-x-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors">
+            <Filter size={16} />
+            <span>Filters</span>
+          </button>
+        </div>
       </div>
       
       <div className="p-6">
@@ -55,22 +109,37 @@ const IssuesMap: React.FC = () => {
             <line x1="300" y1="0" x2="300" y2="200" stroke="#e5e7eb" strokeWidth="2" />
           </svg>
           
-          {/* Issue markers */}
-          {mockIssuePoints.map((point, index) => (
+          {/* Live Issue markers */}
+          {issuePoints.slice(0, 20).map((point, index) => (
             <div
               key={point.id}
               className="absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer group"
               style={{
-                left: `${25 + index * 20}%`,
-                top: `${30 + index * 15}%`
+                left: `${Math.min(90, 10 + (index % 8) * 12)}%`,
+                top: `${Math.min(85, 15 + Math.floor(index / 8) * 25)}%`
               }}
             >
               <MapPin className={`h-6 w-6 ${getMarkerColor(point.status)} drop-shadow-lg group-hover:scale-110 transition-transform`} />
-              <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 bg-black text-white px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                {point.type} - {point.status}
+              <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 bg-black text-white px-3 py-2 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 max-w-xs">
+                <div className="font-semibold">{point.type}</div>
+                <div className="text-gray-300">{point.status}</div>
+                {point.address && (
+                  <div className="text-gray-400 text-xs mt-1 truncate">{point.address}</div>
+                )}
               </div>
             </div>
           ))}
+          
+          {/* Show message if no issues with coordinates */}
+          {issuePoints.length === 0 && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="text-center text-gray-500">
+                <MapPin className="h-12 w-12 mx-auto mb-2 text-gray-300" />
+                <p className="text-sm">No issues with location data found</p>
+                <p className="text-xs text-gray-400 mt-1">Issues will appear here when users submit complaints with GPS coordinates</p>
+              </div>
+            </div>
+          )}
         </div>
         
         {/* Map legend */}
