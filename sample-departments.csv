@@ -1,0 +1,46 @@
+city,category,pincode,department,higher_authority
+Delhi,Infrastructure,110001,Roads & Infrastructure Department,Municipal Commissioner - Roads & Infrastructure
+Delhi,Garbage Collection,110001,Sanitation Department,Municipal Commissioner - Sanitation
+Delhi,Water Leakage,110001,Water Department,Municipal Commissioner - Water Supply
+Delhi,Streetlight,110001,Electrical Department,Municipal Commissioner - Electrical
+Delhi,Pothole,110001,Roads & Infrastructure Department,Municipal Commissioner - Roads & Infrastructure
+Mumbai,Infrastructure,400001,Municipal Corporation Roads Department,Municipal Commissioner - Mumbai
+Mumbai,Garbage Collection,400001,Solid Waste Management Department,Municipal Commissioner - SWM
+Mumbai,Water Leakage,400001,Hydraulic Engineering Department,Municipal Commissioner - Water
+Mumbai,Streetlight,400001,Street Light Department,Municipal Commissioner - Electrical
+Mumbai,Pothole,400001,Road Maintenance Department,Municipal Commissioner - Roads
+Bangalore,Infrastructure,560001,Bruhat Bengaluru Mahanagara Palike - Roads,Commissioner BBMP - Infrastructure
+Bangalore,Garbage Collection,560001,Solid Waste Management - BBMP,Commissioner BBMP - SWM  
+Bangalore,Water Leakage,560001,Bangalore Water Supply & Sewerage Board,Managing Director BWSSB
+Bangalore,Streetlight,560001,Electrical Department - BBMP,Commissioner BBMP - Electrical
+Bangalore,Pothole,560001,Road Infrastructure - BBMP,Commissioner BBMP - Roads
+Chennai,Infrastructure,600001,Greater Chennai Corporation - Roads,Commissioner GCC - Infrastructure
+Chennai,Garbage Collection,600001,Solid Waste Management - GCC,Commissioner GCC - SWM
+Chennai,Water Leakage,600001,Chennai MetroWater,Managing Director CMWSSB
+Chennai,Streetlight,600001,Electrical Department - GCC,Commissioner GCC - Electrical
+Chennai,Pothole,600001,Roads Department - GCC,Commissioner GCC - Roads
+Kolkata,Infrastructure,700001,Kolkata Municipal Corporation - Roads,Municipal Commissioner KMC - Infrastructure
+Kolkata,Garbage Collection,700001,Solid Waste Management - KMC,Municipal Commissioner KMC - SWM
+Kolkata,Water Leakage,700001,Kolkata Municipal Corporation - Water,Municipal Commissioner KMC - Water
+Kolkata,Streetlight,700001,Electrical Department - KMC,Municipal Commissioner KMC - Electrical
+Kolkata,Pothole,700001,Roads Department - KMC,Municipal Commissioner KMC - Roads
+Hyderabad,Infrastructure,500001,Greater Hyderabad Municipal Corporation - Roads,Commissioner GHMC - Infrastructure
+Hyderabad,Garbage Collection,500001,Solid Waste Management - GHMC,Commissioner GHMC - SWM
+Hyderabad,Water Leakage,500001,Hyderabad Metropolitan Water Supply,Managing Director HMWS&SB
+Hyderabad,Streetlight,500001,Electrical Department - GHMC,Commissioner GHMC - Electrical
+Hyderabad,Pothole,500001,Roads Department - GHMC,Commissioner GHMC - Roads
+Pune,Infrastructure,411001,Pune Municipal Corporation - Roads,Municipal Commissioner PMC - Infrastructure
+Pune,Garbage Collection,411001,Solid Waste Management - PMC,Municipal Commissioner PMC - SWM
+Pune,Water Leakage,411001,Water Department - PMC,Municipal Commissioner PMC - Water
+Pune,Streetlight,411001,Electrical Department - PMC,Municipal Commissioner PMC - Electrical
+Pune,Pothole,411001,Roads Department - PMC,Municipal Commissioner PMC - Roads
+Ahmedabad,Infrastructure,380001,Ahmedabad Municipal Corporation - Roads,Municipal Commissioner AMC - Infrastructure
+Ahmedabad,Garbage Collection,380001,Solid Waste Management - AMC,Municipal Commissioner AMC - SWM
+Ahmedabad,Water Leakage,380001,Water Department - AMC,Municipal Commissioner AMC - Water
+Ahmedabad,Streetlight,380001,Electrical Department - AMC,Municipal Commissioner AMC - Electrical
+Ahmedabad,Pothole,380001,Roads Department - AMC,Municipal Commissioner AMC - Roads
+Ranchi,Infrastructure,834001,Ranchi Municipal Corporation - Roads,Municipal Commissioner RMC - Infrastructure
+Ranchi,Garbage Collection,834001,Solid Waste Management - RMC,Municipal Commissioner RMC - SWM
+Ranchi,Water Leakage,834001,Water Supply Department - RMC,Municipal Commissioner RMC - Water
+Ranchi,Streetlight,834001,Electrical Department - RMC,Municipal Commissioner RMC - Electrical
+Ranchi,Pothole,834001,Roads Department - RMC,Municipal Commissioner RMC - Roads
