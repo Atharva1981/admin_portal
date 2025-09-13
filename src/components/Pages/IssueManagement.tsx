@@ -1,11 +1,17 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Filter, Search, Download, Eye } from 'lucide-react';
 import IssueModal from '../UI/IssueModal';
 import { mockIssues } from '../../data/mockData';
-import { Issue } from '../../types';
+import { Issue, User } from '../../types';
+import { fetchUserComplaints, UserComplaint } from '../../services/userComplaintsService';
+import { mapComplaintToDepartmentFrontend, DepartmentMappingResult } from '../../services/departmentMappingService';
 
 const IssueManagement: React.FC = () => {
   const [issues] = useState<Issue[]>(mockIssues);
+  const [userComplaints, setUserComplaints] = useState<UserComplaint[]>([]);
+  const [departmentMappings, setDepartmentMappings] = useState<Map<string, DepartmentMappingResult>>(new Map());
+  const [loadingComplaints, setLoadingComplaints] = useState(false);
+  const [mappingLoading, setMappingLoading] = useState(false);
   const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [filters, setFilters] = useState({
@@ -166,10 +172,8 @@ const IssueManagement: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleIssueUpdate = (updatedIssue: Issue) => {
-    setIssues(prev => prev.map(issue => 
-      issue.id === updatedIssue.id ? updatedIssue : issue
-    ));
+  const handleIssueUpdate = () => {
+    // For now, just close the modal since we're working with read-only complaint data
     setIsModalOpen(false);
   };
 

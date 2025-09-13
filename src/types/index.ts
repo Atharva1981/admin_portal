@@ -1,12 +1,12 @@
 export interface Issue {
   id: string;
-  category: 'Pothole' | 'Garbage' | 'Streetlight' | 'Water Leakage' | 'Other';
+  category: string;
   location: string;
   ward: string;
   department: string;
   assignedTo?: string;
-  status: 'Open' | 'In Progress' | 'Resolved' | 'Escalated';
-  priority: 'Low' | 'Medium' | 'High';
+  status: 'Open' | 'In Progress' | 'Resolved' | 'Escalated' | 'New';
+  priority: 'Low' | 'Medium' | 'High' | 'Critical';
   reportedOn: string;
   slaDeadline: string;
   description: string;
