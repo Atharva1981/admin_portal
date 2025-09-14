@@ -1,6 +1,7 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
 import { getAuth, connectAuthEmulator } from 'firebase/auth';
+import { getStorage } from 'firebase/storage';
 
 // Admin Firebase Configuration (for admin operations)
 const adminFirebaseConfig = {
@@ -47,6 +48,9 @@ export const userDb = getFirestore(userApp);
 export const adminAuth = getAuth(adminApp);
 export const userAuth = getAuth(userApp);
 
+// Get Storage instance (using userApp for file storage)
+export const storage = getStorage(userApp);
+
 // Development mode - connect to emulators if needed
 if (import.meta.env.MODE === 'development') {
   // Uncomment these lines if you want to use Firebase emulators
@@ -57,4 +61,4 @@ if (import.meta.env.MODE === 'development') {
 }
 
 export { adminApp, userApp };
-export default { adminDb, userDb, adminAuth, userAuth };
+export default { adminDb, userDb, adminAuth, userAuth, storage };

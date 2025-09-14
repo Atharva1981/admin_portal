@@ -1,21 +1,76 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
+
+import React, { useState, useMemo, useEffect } from 'react';
+
 import { List, Check, Clock, AlertTriangle, Filter } from 'lucide-react';
 import StatsCard from '../UI/StatsCard';
 import IssuesMap from '../Dashboard/IssuesMap';
 import ComplaintsList from '../Complaints/ComplaintsList';
 import UserComplaintsTest from '../UserComplaints/UserComplaintsTest';
 import DepartmentMappingTest from '../DepartmentMapping/DepartmentMappingTest';
+
 import { useAuth } from '../../contexts/AuthContext';
 import { SLANotificationService } from '../../services/slaNotificationService';
 import { fetchUserComplaints, UserComplaint } from '../../services/userComplaintsService';
+
+import StatusDropdownDebug from '../UI/StatusDropdownDebug';
+import DatabaseComplaintChecker from '../UI/DatabaseComplaintChecker';
+import { mockIssues } from '../../data/mockData';
+import { useAuth } from '../../contexts/AuthContext';
+import DashboardStatsService, { DashboardStats, StatsFilters } from '../../services/dashboardStatsService';
+
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
   const [statusFilter, setStatusFilter] = useState('All');
   const [categoryFilter, setCategoryFilter] = useState('All');
   const [activeTab, setActiveTab] = useState<'internal' | 'user-complaints' | 'user-test' | 'dept-mapping'>('internal');
+
   const [userComplaints, setUserComplaints] = useState<UserComplaint[]>([]);
   const [loadingComplaints, setLoadingComplaints] = useState(false);
+
+  const [realStats, setRealStats] = useState<DashboardStats>({
+    totalIssues: 0,
+    resolved: 0,
+    pending: 0,
+    escalated: 0,
+    slaBreached: 0
+  });
+  const [statsLoading, setStatsLoading] = useState(true);
+
+  // Real-time stats filters based on user role and current filters
+  const statsFilters = useMemo((): StatsFilters => {
+    const filters: StatsFilters = {};
+    
+    // Role-based department filtering
+    if (user?.role === 'Department Head' || user?.role === 'Staff') {
+      filters.department = user.department;
+    }
+    
+    // Apply category filter if not 'All'
+    if (categoryFilter !== 'All') {
+      filters.category = categoryFilter;
+    }
+    
+    return filters;
+  }, [user, categoryFilter]);
+
+  // Load real-time statistics
+  useEffect(() => {
+    setStatsLoading(true);
+    
+    const unsubscribe = DashboardStatsService.listenToDashboardStats(
+      (stats) => {
+        setRealStats(stats);
+        setStatsLoading(false);
+      },
+      statsFilters
+    );
+
+    return unsubscribe;
+  }, [statsFilters]);
+
 
   // Load real user complaints data
   useEffect(() => {
@@ -47,6 +102,7 @@ const Dashboard: React.FC = () => {
       };
     }
 
+
     const total = userComplaints.length;
     const resolved = userComplaints.filter(complaint => complaint.status === 'Resolved').length;
     const pending = userComplaints.filter(complaint => 
@@ -73,6 +129,19 @@ const Dashboard: React.FC = () => {
       slaBreached
     };
   }, [userComplaints, loadingComplaints]);
+
+    return filtered;
+  }, [user, statusFilter, categoryFilter]);
+
+  // Use real stats instead of mock calculations
+  const stats = statsLoading ? {
+    totalIssues: 0,
+    resolved: 0,
+    pending: 0,
+    escalated: 0,
+    slaBreached: 0
+  } : realStats;
+
 
   // Calculate trends (mock data for now)
   const trends = {
@@ -202,6 +271,7 @@ const Dashboard: React.FC = () => {
             >
               Internal Issues
             </button>
+
             {user?.role === 'Super Admin' && (
               <button
                 onClick={() => setActiveTab('user-test')}
@@ -214,6 +284,17 @@ const Dashboard: React.FC = () => {
                 User Test
               </button>
             )}
+
+            <button
+              onClick={() => setActiveTab('user-test')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'user-test'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              User Complaints
+            </button>
           </nav>
         </div>
       </div>
@@ -221,6 +302,9 @@ const Dashboard: React.FC = () => {
       {/* Tab Content */}
       {activeTab === 'internal' ? (
         <>
+          {/* Database Complaint Checker */}
+          <DatabaseComplaintChecker />
+
           {/* Map View */}
           <IssuesMap />
 
@@ -331,6 +415,7 @@ const Dashboard: React.FC = () => {
                           <div className="font-medium">{complaint.address || 'Savalade'}</div>
                           <div className="text-gray-500 text-xs">{complaint.city || 'Savalade'}</div>
                         </div>
+
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {complaint.department || 'Municipal Corporation'}
@@ -363,6 +448,57 @@ const Dashboard: React.FC = () => {
                   );
                 })
               )}
+
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {issue.category}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <div>
+                        <div className="font-medium">{issue.location}</div>
+                        <div className="text-gray-500 text-xs">{issue.ward}</div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {issue.department}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {issue.assignedTo || 'Unassigned'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <StatusDropdownDebug
+                        currentStatus={issue.status.toLowerCase().replace(' ', '-')}
+                        complaintId={issue.id}
+                        userId={user?.id || 'admin'}
+                        onStatusUpdate={() => {
+                          // Refresh the data after status update
+                          window.location.reload();
+                        }}
+                      />
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        issue.priority === 'High' ? 'bg-red-100 text-red-800' :
+                        issue.priority === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-green-100 text-green-800'
+                      }`}>
+                        {issue.priority}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        isSlaBreached ? 'bg-red-100 text-red-800' :
+                        hoursUntilDeadline < 24 ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-green-100 text-green-800'
+                      }`}>
+                        {isSlaBreached ? 'Breached' : `${hoursUntilDeadline}h left`}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
+
             </tbody>
           </table>
         </div>

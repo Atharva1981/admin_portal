@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { MapPin, Filter, RefreshCw } from 'lucide-react';
 import { fetchUserComplaints, UserComplaint } from '../../services/userComplaintsService';
-import { Loader } from '@googlemaps/js-api-loader';
 
 const IssuesMap: React.FC = () => {
   const [userComplaints, setUserComplaints] = useState<UserComplaint[]>([]);
@@ -9,11 +8,12 @@ const IssuesMap: React.FC = () => {
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const [mapLoaded, setMapLoaded] = useState(false);
   const mapRef = useRef<HTMLDivElement>(null);
-  const googleMapRef = useRef<google.maps.Map | null>(null);
-  const markersRef = useRef<google.maps.Marker[]>([]);
+  // const googleMapRef = useRef<google.maps.Map | null>(null);
+  // const markersRef = useRef<google.maps.Marker[]>([]);
 
-  // Initialize Google Maps
+  // Initialize Google Maps - Temporarily disabled due to dependency issues
   useEffect(() => {
+
     const initializeMap = async () => {
       if (!mapRef.current) return;
 
@@ -58,6 +58,45 @@ const IssuesMap: React.FC = () => {
     };
 
     initializeMap();
+
+    // const initializeMap = async () => {
+    //   if (!mapRef.current) return;
+
+    //   try {
+    //     const loader = new Loader({
+    //       apiKey: 'AIzaSyAfcg3SH18uTmWdSsLloBlPCpdwUo9RSkE',
+    //       version: 'weekly',
+    //       libraries: ['places']
+    //     });
+
+    //     await loader.load();
+
+    //     // Default center (India - you can adjust this to your city)
+    //     const map = new google.maps.Map(mapRef.current, {
+    //       center: { lat: 28.6139, lng: 77.2090 }, // New Delhi coordinates
+    //       zoom: 12,
+    //       mapTypeId: google.maps.MapTypeId.ROADMAP,
+    //       styles: [
+    //         {
+    //           featureType: 'poi',
+    //           elementType: 'labels',
+    //           stylers: [{ visibility: 'off' }]
+    //         }
+    //       ]
+    //     });
+
+    //     googleMapRef.current = map;
+    //     setMapLoaded(true);
+    //   } catch (error) {
+    //     console.error('Error loading Google Maps:', error);
+    //   }
+    // };
+
+    // initializeMap();
+    
+    // For now, show a placeholder message
+    setMapLoaded(false);
+
   }, []);
 
   // Load user complaints for map display
@@ -107,8 +146,9 @@ const IssuesMap: React.FC = () => {
       createdAt: complaint.createdAt
     }));
 
-  // Update markers when complaints or map changes
+  // Update markers when complaints or map changes - Temporarily disabled
   useEffect(() => {
+
     if (!googleMapRef.current || !mapLoaded) return;
 
     // Clear existing markers
@@ -170,41 +210,92 @@ const IssuesMap: React.FC = () => {
       if (!bounds.isEmpty()) {
         googleMapRef.current.fitBounds(bounds);
       }
+
+    // Commenting out Google Maps functionality until dependency is resolved
+    // if (!googleMapRef.current || !mapLoaded) return;
+
+    // // Clear existing markers
+    // markersRef.current.forEach(marker => marker.setMap(null));
+    // markersRef.current = [];
+
+    // // Add new markers for each complaint
+    // issuePoints.forEach(point => {
+    //   const marker = new google.maps.Marker({
+    //     position: { lat: point.lat, lng: point.lng },
+    //     map: googleMapRef.current,
+    //     title: `${point.type} - ${point.status}`,
+    //     icon: {
+    //       path: google.maps.SymbolPath.CIRCLE,
+    //       scale: 8,
+    //       fillColor: getMarkerColor(point.status),
+    //       fillOpacity: 0.8,
+    //       strokeColor: '#ffffff',
+    //       strokeWeight: 2
+    //     }
+    //   });
+
+    //   // Add info window
+    //   const infoWindow = new google.maps.InfoWindow({
+    //     content: `
+    //       <div style="padding: 8px; max-width: 250px;">
+    //         <h4 style="margin: 0 0 8px 0; color: #1f2937;">${point.type}</h4>
+    //         <p style="margin: 0 0 4px 0; color: #6b7280; font-size: 12px;"><strong>Status:</strong> ${point.status}</p>
+    //         <p style="margin: 0 0 4px 0; color: #6b7280; font-size: 12px;"><strong>Location:</strong> ${point.address}</p>
+    //         <p style="margin: 0; color: #6b7280; font-size: 12px;"><strong>Description:</strong> ${point.description}</p>
+    //       </div>
+    //     `
+    //   });
+
+    //   marker.addListener('click', () => {
+    //     infoWindow.open(googleMapRef.current, marker);
+    //   });
+
+    //   markersRef.current.push(marker);
+    // });
+
+    // // Adjust map bounds to fit all markers
+    // if (issuePoints.length > 0) {
+    //   const bounds = new google.maps.LatLngBounds();
+    //   issuePoints.forEach(point => {
+    //     bounds.extend({ lat: point.lat, lng: point.lng });
+    //   });
+    //   googleMapRef.current.fitBounds(bounds);
+
       
-      // Ensure minimum zoom level
-      const listener = google.maps.event.addListener(googleMapRef.current, 'bounds_changed', () => {
-        if (googleMapRef.current!.getZoom()! > 15) {
-          googleMapRef.current!.setZoom(15);
-        }
-        google.maps.event.removeListener(listener);
-      });
-    }
+    //   // Ensure minimum zoom level
+    //   const listener = google.maps.event.addListener(googleMapRef.current, 'bounds_changed', () => {
+    //     if (googleMapRef.current!.getZoom()! > 15) {
+    //       googleMapRef.current!.setZoom(15);
+    //     }
+    //     google.maps.event.removeListener(listener);
+    //   });
+    // }
   }, [userComplaints, mapLoaded]);
 
-  const getMarkerColor = (status: string) => {
-    switch (status) {
-      case 'Open': return '#f59e0b';
-      case 'In Progress': return '#3b82f6';
-      case 'Resolved': return '#10b981';
-      case 'Escalated': return '#ef4444';
-      default: return '#6b7280';
-    }
-  };
+  // const getMarkerColor = (status: string) => {
+  //   switch (status) {
+  //     case 'Open': return '#f59e0b';
+  //     case 'In Progress': return '#3b82f6';
+  //     case 'Resolved': return '#10b981';
+  //     case 'Escalated': return '#ef4444';
+  //     default: return '#6b7280';
+  //   }
+  // };
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-      <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900">Live Issues Map</h3>
-          <p className="text-sm text-gray-600">
-            Visualize issues by location • {issuePoints.length} active issues
-            {lastUpdated && (
-              <span className="ml-2 text-xs text-gray-500">
-                Last updated: {lastUpdated.toLocaleTimeString()}
-              </span>
-            )}
-          </p>
-        </div>
+        <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900">Live Issues Map</h3>
+            <p className="text-sm text-gray-600">
+              Visualize issues by location • {issuePoints.length} active issues
+              {lastUpdated && (
+                <span className="ml-2 text-xs text-gray-500">
+                  Last updated: {lastUpdated.toLocaleTimeString()}
+                </span>
+              )}
+            </p>
+          </div>
         <div className="flex items-center space-x-2">
           <button 
             onClick={loadComplaints}
@@ -234,6 +325,7 @@ const IssuesMap: React.FC = () => {
           {!mapLoaded && (
             <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
               <div className="text-center text-gray-500">
+
                 {import.meta.env.VITE_GOOGLE_MAPS_API_KEY ? (
                   <>
                     <RefreshCw className="h-8 w-8 mx-auto mb-2 animate-spin" />
@@ -255,6 +347,11 @@ const IssuesMap: React.FC = () => {
                     </div>
                   </>
                 )}
+
+                <MapPin className="h-8 w-8 mx-auto mb-2" />
+                <p className="text-sm">Google Maps Temporarily Disabled</p>
+                <p className="text-xs text-gray-400 mt-1">Map functionality will be restored once dependencies are resolved</p>
+
               </div>
             </div>
           )}
