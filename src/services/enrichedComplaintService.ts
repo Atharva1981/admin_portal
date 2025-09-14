@@ -101,9 +101,9 @@ const enrichComplaintWithDepartment = async (complaint: UserComplaint): Promise<
       processingStatus = departmentMapping.isDefault ? 'pending' : 'assigned';
     }
 
-    // Calculate SLA deadline (assuming 72 hours for most issues, 24 for high priority)
-    const slaHours = complaint.priority === 'High' ? 24 : 72;
-    const slaDeadline = new Date(createdAt.getTime() + (slaHours * 60 * 60 * 1000));
+    // Calculate SLA deadline (assuming 48 seconds for most issues, 24 for high priority)
+    const slaSeconds = complaint.priority === 'High' ? 24 : 48;
+    const slaDeadline = new Date(createdAt.getTime() + (slaSeconds * 1000));
 
     const enrichedComplaint: EnrichedComplaint = {
       ...complaint,

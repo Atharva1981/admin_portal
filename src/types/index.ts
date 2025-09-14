@@ -38,8 +38,9 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  role: 'Super Admin' | 'Department Head' | 'Staff';
+  role: 'Super Admin' | 'Department Head' | 'Staff' | 'Savalade Admin' | 'Ranchi Admin' | 'Jamshedpur Admin' | 'Dhanbad Admin' | 'Bokaro Admin';
   department?: string;
+  city?: string;
 }
 
 export interface Notification {

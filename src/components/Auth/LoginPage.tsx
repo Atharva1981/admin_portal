@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Eye, EyeOff, Shield, User, Building2 } from 'lucide-react';
+import { Eye, EyeOff, Shield, Building2 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
 const LoginPage: React.FC = () => {
@@ -13,8 +13,11 @@ const LoginPage: React.FC = () => {
 
   const roles = [
     { value: 'Super Admin', label: 'Super Admin', icon: Shield, description: 'Full system access' },
-    { value: 'Department Head', label: 'Department Head', icon: Building2, description: 'Manage department issues' },
-    { value: 'Staff', label: 'Staff', icon: User, description: 'View and update assigned issues' }
+    { value: 'Savalade Admin', label: 'Savalade Admin', icon: Building2, description: 'Manage Savalade city issues' },
+    { value: 'Ranchi Admin', label: 'Ranchi Admin', icon: Building2, description: 'Manage Ranchi city issues' },
+    { value: 'Jamshedpur Admin', label: 'Jamshedpur Admin', icon: Building2, description: 'Manage Jamshedpur city issues' },
+    { value: 'Dhanbad Admin', label: 'Dhanbad Admin', icon: Building2, description: 'Manage Dhanbad city issues' },
+    { value: 'Bokaro Admin', label: 'Bokaro Admin', icon: Building2, description: 'Manage Bokaro city issues' }
   ];
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -40,6 +43,7 @@ const LoginPage: React.FC = () => {
       setLoginAttempts(0);
     }
   };
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
@@ -178,13 +182,14 @@ const LoginPage: React.FC = () => {
 
           {/* Admin Credentials */}
           <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-            <h4 className="text-sm font-medium text-blue-900 mb-2">Admin Login Credentials:</h4>
+            <h4 className="text-sm font-medium text-blue-900 mb-2">City Admin Login Credentials:</h4>
             <div className="text-xs text-blue-800 space-y-1">
               <div><strong>Super Admin:</strong> admin@cityportal.gov / Admin@2024!</div>
-              <div><strong>Roads Dept Head:</strong> john@roads.gov / Roads@2024!</div>
-              <div><strong>Electrical Dept Head:</strong> sarah@electrical.gov / Electrical@2024!</div>
-              <div><strong>Water Staff:</strong> mike@water.gov / Water@2024!</div>
-              <div><strong>Sanitation Staff:</strong> lisa@sanitation.gov / Sanitation@2024!</div>
+              <div><strong>Savalade Admin:</strong> admin@savalade.gov / Savalade@2024!</div>
+              <div><strong>Ranchi Admin:</strong> admin@ranchi.gov / Ranchi@2024!</div>
+              <div><strong>Jamshedpur Admin:</strong> admin@jamshedpur.gov / Jamshedpur@2024!</div>
+              <div><strong>Dhanbad Admin:</strong> admin@dhanbad.gov / Dhanbad@2024!</div>
+              <div><strong>Bokaro Admin:</strong> admin@bokaro.gov / Bokaro@2024!</div>
             </div>
           </div>
 

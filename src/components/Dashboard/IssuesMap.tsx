@@ -17,9 +17,18 @@ const IssuesMap: React.FC = () => {
     const initializeMap = async () => {
       if (!mapRef.current) return;
 
+      const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+      
+      // Skip Google Maps initialization if no API key is provided
+      if (!apiKey) {
+        console.warn('Google Maps API key not found. Map functionality disabled.');
+        setMapLoaded(false);
+        return;
+      }
+
       try {
         const loader = new Loader({
-          apiKey: 'AIzaSyAfcg3SH18uTmWdSsLloBlPCpdwUo9RSkE',
+          apiKey: apiKey,
           version: 'weekly',
           libraries: ['places']
         });
@@ -44,6 +53,7 @@ const IssuesMap: React.FC = () => {
         setMapLoaded(true);
       } catch (error) {
         console.error('Error loading Google Maps:', error);
+        setMapLoaded(false);
       }
     };
 
@@ -75,13 +85,21 @@ const IssuesMap: React.FC = () => {
     }
   };
 
-  // Convert complaints to map points
+  // Convert complaints to map points with validation
   const issuePoints = userComplaints
-    .filter(complaint => complaint.latitude && complaint.longitude)
+    .filter(complaint => {
+      // Validate latitude and longitude are valid numbers
+      const lat = parseFloat(complaint.latitude?.toString() || '');
+      const lng = parseFloat(complaint.longitude?.toString() || '');
+      
+      return !isNaN(lat) && !isNaN(lng) && 
+             lat >= -90 && lat <= 90 && 
+             lng >= -180 && lng <= 180;
+    })
     .map(complaint => ({
       id: complaint.complaintId,
-      lat: complaint.latitude,
-      lng: complaint.longitude,
+      lat: parseFloat(complaint.latitude?.toString() || '0'),
+      lng: parseFloat(complaint.longitude?.toString() || '0'),
       type: complaint.category,
       status: complaint.status || 'Open',
       description: complaint.description,
@@ -99,6 +117,12 @@ const IssuesMap: React.FC = () => {
 
     // Add new markers for each complaint
     issuePoints.forEach(point => {
+      // Double-check coordinates before creating marker
+      if (isNaN(point.lat) || isNaN(point.lng)) {
+        console.warn('Invalid coordinates for complaint:', point.id, point.lat, point.lng);
+        return;
+      }
+
       const marker = new google.maps.Marker({
         position: { lat: point.lat, lng: point.lng },
         map: googleMapRef.current,
@@ -136,9 +160,16 @@ const IssuesMap: React.FC = () => {
     if (issuePoints.length > 0) {
       const bounds = new google.maps.LatLngBounds();
       issuePoints.forEach(point => {
-        bounds.extend({ lat: point.lat, lng: point.lng });
+        // Validate coordinates before extending bounds
+        if (!isNaN(point.lat) && !isNaN(point.lng)) {
+          bounds.extend({ lat: point.lat, lng: point.lng });
+        }
       });
-      googleMapRef.current.fitBounds(bounds);
+      
+      // Only fit bounds if we have valid points
+      if (!bounds.isEmpty()) {
+        googleMapRef.current.fitBounds(bounds);
+      }
       
       // Ensure minimum zoom level
       const listener = google.maps.event.addListener(googleMapRef.current, 'bounds_changed', () => {
@@ -199,13 +230,31 @@ const IssuesMap: React.FC = () => {
             style={{ minHeight: '384px' }}
           />
           
-          {/* Loading overlay */}
+          {/* Loading/Error overlay */}
           {!mapLoaded && (
             <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
               <div className="text-center text-gray-500">
-                <RefreshCw className="h-8 w-8 mx-auto mb-2 animate-spin" />
-                <p className="text-sm">Loading Google Maps...</p>
-                <p className="text-xs text-gray-400 mt-1">Make sure you have a valid Google Maps API key</p>
+                {import.meta.env.VITE_GOOGLE_MAPS_API_KEY ? (
+                  <>
+                    <RefreshCw className="h-8 w-8 mx-auto mb-2 animate-spin" />
+                    <p className="text-sm">Loading Google Maps...</p>
+                    <p className="text-xs text-gray-400 mt-1">Make sure you have a valid Google Maps API key</p>
+                  </>
+                ) : (
+                  <>
+                    <MapPin className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                    <p className="text-sm font-medium">Google Maps Unavailable</p>
+                    <p className="text-xs text-gray-400 mt-1">Add VITE_GOOGLE_MAPS_API_KEY to .env file</p>
+                    <div className="mt-3 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                      <p className="text-xs text-yellow-700">
+                        <strong>To enable maps:</strong><br/>
+                        1. Get a Google Maps API key<br/>
+                        2. Add to .env: VITE_GOOGLE_MAPS_API_KEY=your_key<br/>
+                        3. Enable billing in Google Cloud Console
+                      </p>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           )}

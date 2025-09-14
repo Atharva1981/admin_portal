@@ -48,7 +48,7 @@ export const adminAuth = getAuth(adminApp);
 export const userAuth = getAuth(userApp);
 
 // Development mode - connect to emulators if needed
-if (process.env.NODE_ENV === 'development') {
+if (import.meta.env.MODE === 'development') {
   // Uncomment these lines if you want to use Firebase emulators
   // connectFirestoreEmulator(adminDb, 'localhost', 8080);
   // connectFirestoreEmulator(userDb, 'localhost', 8081);

@@ -30,6 +30,7 @@ export interface UserComplaint {
   department?: string;
   address?: string;
   ward?: string;
+  assignedTo?: string;
   updatedAt?: any;
 }
 
@@ -125,6 +126,7 @@ export const fetchUserComplaints = async (options: FetchOptions = {}): Promise<U
         department: data.department || 'Not assigned',
         address: data.address || 'Address not provided',
         ward: data.ward || data.city || 'Unknown',
+        assignedTo: data.assignedTo || data.assignee || '',
         updatedAt: data.updatedAt || data.timeline?.lastUpdated
       };
       
@@ -215,6 +217,7 @@ export const listenToUserComplaints = (
           department: data.department || 'Not assigned',
           address: data.address || 'Address not provided',
           ward: data.ward || data.city || 'Unknown',
+          assignedTo: data.assignedTo || data.assignee || '',
           updatedAt: data.updatedAt || data.timeline?.lastUpdated
         };
         
@@ -273,6 +276,7 @@ export const fetchUserComplaintById = async (complaintId: string): Promise<UserC
       department: data.department || 'Not assigned',
       address: data.address || 'Address not provided',
       ward: data.ward || data.city || 'Unknown',
+      assignedTo: data.assignedTo || data.assignee || '',
       updatedAt: data.updatedAt || data.timeline?.lastUpdated
     };
     

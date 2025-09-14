@@ -103,7 +103,7 @@ export const createSampleComplaint = () => {
 };
 
 // Usage in development
-if (process.env.NODE_ENV === 'development') {
+if (import.meta.env.MODE === 'development') {
   // Uncomment the line below to test Firebase connections on app load
   // testFirebaseConnections();
 }

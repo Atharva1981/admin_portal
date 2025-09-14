@@ -21,31 +21,43 @@ const adminUsers: User[] = [
   },
   {
     id: 'USER-002',
-    name: 'John Smith',
-    email: 'john@roads.gov',
-    role: 'Department Head',
-    department: 'Roads & Infrastructure'
+    name: 'Savalade Admin',
+    email: 'admin@savalade.gov',
+    role: 'Savalade Admin',
+    department: 'Municipal Corporation',
+    city: 'Savalade'
   },
   {
     id: 'USER-003',
-    name: 'Sarah Johnson',
-    email: 'sarah@electrical.gov',
-    role: 'Department Head',
-    department: 'Electrical Department'
+    name: 'Ranchi Admin',
+    email: 'admin@ranchi.gov',
+    role: 'Ranchi Admin',
+    department: 'Municipal Corporation',
+    city: 'Ranchi'
   },
   {
     id: 'USER-004',
-    name: 'Mike Wilson',
-    email: 'mike@water.gov',
-    role: 'Staff',
-    department: 'Water Department'
+    name: 'Jamshedpur Admin',
+    email: 'admin@jamshedpur.gov',
+    role: 'Jamshedpur Admin',
+    department: 'Municipal Corporation',
+    city: 'Jamshedpur'
   },
   {
     id: 'USER-005',
-    name: 'Lisa Brown',
-    email: 'lisa@sanitation.gov',
-    role: 'Staff',
-    department: 'Sanitation Department'
+    name: 'Dhanbad Admin',
+    email: 'admin@dhanbad.gov',
+    role: 'Dhanbad Admin',
+    department: 'Municipal Corporation',
+    city: 'Dhanbad'
+  },
+  {
+    id: 'USER-006',
+    name: 'Bokaro Admin',
+    email: 'admin@bokaro.gov',
+    role: 'Bokaro Admin',
+    department: 'Municipal Corporation',
+    city: 'Bokaro'
   }
 ];
 
@@ -55,21 +67,25 @@ const adminCredentials: Record<string, { password: string; user: User }> = {
     password: 'Admin@2024!',
     user: adminUsers[0]
   },
-  'john@roads.gov': {
-    password: 'Roads@2024!',
+  'admin@savalade.gov': {
+    password: 'Savalade@2024!',
     user: adminUsers[1]
   },
-  'sarah@electrical.gov': {
-    password: 'Electrical@2024!',
+  'admin@ranchi.gov': {
+    password: 'Ranchi@2024!',
     user: adminUsers[2]
   },
-  'mike@water.gov': {
-    password: 'Water@2024!',
+  'admin@jamshedpur.gov': {
+    password: 'Jamshedpur@2024!',
     user: adminUsers[3]
   },
-  'lisa@sanitation.gov': {
-    password: 'Sanitation@2024!',
+  'admin@dhanbad.gov': {
+    password: 'Dhanbad@2024!',
     user: adminUsers[4]
+  },
+  'admin@bokaro.gov': {
+    password: 'Bokaro@2024!',
+    user: adminUsers[5]
   }
 };
 

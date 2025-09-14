@@ -2,6 +2,12 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Allow admin access to civic_issues collection
+    match /civic_issues/{document} {
+      allow read, write: if true;
+    }
+    
+    // Default deny for other collections
     match /{document=**} {
       allow read, write: if false;
     }
