@@ -1,18 +1,61 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { List, Check, Clock, AlertTriangle, Filter } from 'lucide-react';
 import StatsCard from '../UI/StatsCard';
 import IssuesMap from '../Dashboard/IssuesMap';
 import ComplaintsList from '../Complaints/ComplaintsList';
 import UserComplaintsTest from '../UserComplaints/UserComplaintsTest';
 import DepartmentMappingTest from '../DepartmentMapping/DepartmentMappingTest';
+import StatusDropdownDebug from '../UI/StatusDropdownDebug';
+import DatabaseComplaintChecker from '../UI/DatabaseComplaintChecker';
 import { mockIssues } from '../../data/mockData';
 import { useAuth } from '../../contexts/AuthContext';
+import DashboardStatsService, { DashboardStats, StatsFilters } from '../../services/dashboardStatsService';
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
   const [statusFilter, setStatusFilter] = useState('All');
   const [categoryFilter, setCategoryFilter] = useState('All');
   const [activeTab, setActiveTab] = useState<'internal' | 'user-complaints' | 'user-test' | 'dept-mapping'>('internal');
+  const [realStats, setRealStats] = useState<DashboardStats>({
+    totalIssues: 0,
+    resolved: 0,
+    pending: 0,
+    escalated: 0,
+    slaBreached: 0
+  });
+  const [statsLoading, setStatsLoading] = useState(true);
+
+  // Real-time stats filters based on user role and current filters
+  const statsFilters = useMemo((): StatsFilters => {
+    const filters: StatsFilters = {};
+    
+    // Role-based department filtering
+    if (user?.role === 'Department Head' || user?.role === 'Staff') {
+      filters.department = user.department;
+    }
+    
+    // Apply category filter if not 'All'
+    if (categoryFilter !== 'All') {
+      filters.category = categoryFilter;
+    }
+    
+    return filters;
+  }, [user, categoryFilter]);
+
+  // Load real-time statistics
+  useEffect(() => {
+    setStatsLoading(true);
+    
+    const unsubscribe = DashboardStatsService.listenToDashboardStats(
+      (stats) => {
+        setRealStats(stats);
+        setStatsLoading(false);
+      },
+      statsFilters
+    );
+
+    return unsubscribe;
+  }, [statsFilters]);
 
   // Filter issues based on user role and department
   const filteredIssues = useMemo(() => {
@@ -36,28 +79,14 @@ const Dashboard: React.FC = () => {
     return filtered;
   }, [user, statusFilter, categoryFilter]);
 
-  // Calculate real-time stats
-  const stats = useMemo(() => {
-    const total = filteredIssues.length;
-    const resolved = filteredIssues.filter(issue => issue.status === 'Resolved').length;
-    const pending = filteredIssues.filter(issue => issue.status === 'Open' || issue.status === 'In Progress').length;
-    const escalated = filteredIssues.filter(issue => issue.status === 'Escalated').length;
-    
-    // Calculate SLA breaches
-    const slaBreached = filteredIssues.filter(issue => {
-      const now = new Date();
-      const deadline = new Date(issue.slaDeadline);
-      return now > deadline && issue.status !== 'Resolved';
-    }).length;
-
-    return {
-      totalIssues: total,
-      resolved,
-      pending,
-      escalated,
-      slaBreached
-    };
-  }, [filteredIssues]);
+  // Use real stats instead of mock calculations
+  const stats = statsLoading ? {
+    totalIssues: 0,
+    resolved: 0,
+    pending: 0,
+    escalated: 0,
+    slaBreached: 0
+  } : realStats;
 
   // Calculate trends (mock data for now)
   const trends = {
@@ -176,7 +205,7 @@ const Dashboard: React.FC = () => {
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
-              User Test
+              User Complaints
             </button>
           </nav>
         </div>
@@ -185,6 +214,9 @@ const Dashboard: React.FC = () => {
       {/* Tab Content */}
       {activeTab === 'internal' ? (
         <>
+          {/* Database Complaint Checker */}
+          <DatabaseComplaintChecker />
+
           {/* Map View */}
           <IssuesMap />
 
@@ -269,14 +301,15 @@ const Dashboard: React.FC = () => {
                       {issue.assignedTo || 'Unassigned'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        issue.status === 'Resolved' ? 'bg-green-100 text-green-800' :
-                        issue.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
-                        issue.status === 'Escalated' ? 'bg-red-100 text-red-800' :
-                        'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {issue.status}
-                      </span>
+                      <StatusDropdownDebug
+                        currentStatus={issue.status.toLowerCase().replace(' ', '-')}
+                        complaintId={issue.id}
+                        userId={user?.id || 'admin'}
+                        onStatusUpdate={() => {
+                          // Refresh the data after status update
+                          window.location.reload();
+                        }}
+                      />
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${

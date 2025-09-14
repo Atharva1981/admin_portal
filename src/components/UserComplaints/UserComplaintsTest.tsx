@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { fetchUserComplaints, UserComplaint, ComplaintFilters } from '../../services/userComplaintsService';
+import StatusDropdownWithProof from '../UI/StatusDropdownWithProof';
+import { useAuth } from '../../contexts/AuthContext';
 
 const UserComplaintsTest: React.FC = () => {
+  const { user } = useAuth();
   const [complaints, setComplaints] = useState<UserComplaint[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -43,10 +46,29 @@ const UserComplaintsTest: React.FC = () => {
     if (value === '') {
       delete newFilters[key];
     } else {
-      newFilters[key] = value;
+      (newFilters as any)[key] = value;
     }
     setFilters(newFilters);
     loadComplaints(newFilters);
+  };
+
+  const handleStatusUpdate = (complaintId: string, newStatus: string) => {
+    // Update local state immediately for UI responsiveness
+    setComplaints(prev => prev.map(complaint => 
+      complaint.complaintId === complaintId 
+        ? { ...complaint, status: newStatus }
+        : complaint
+    ));
+
+    // Update selected complaint if it's the one being updated
+    if (selectedComplaint?.complaintId === complaintId) {
+      setSelectedComplaint(prev => prev ? { ...prev, status: newStatus } : null);
+    }
+
+    // Refresh complaints from database
+    setTimeout(() => {
+      loadComplaints(filters);
+    }, 1000);
   };
 
   const formatDate = (timestamp: any) => {
@@ -329,15 +351,26 @@ const UserComplaintsTest: React.FC = () => {
                     <p className="text-sm text-gray-500">{selectedComplaint.userPhone}</p>
                   </div>
                   <div>
-                    <h4 className="text-sm font-medium text-gray-500">Status & Priority</h4>
-                    <div className="flex space-x-2">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(selectedComplaint.status || '')}`}>
-                        {selectedComplaint.status || 'Unknown'}
-                      </span>
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getPriorityColor(selectedComplaint.priority || '')}`}>
-                        {selectedComplaint.priority || 'Unknown'}
-                      </span>
-                    </div>
+                    <h4 className="text-sm font-medium text-gray-500">Created At</h4>
+                    <p className="text-sm text-gray-900">{formatDate(selectedComplaint.createdAt)}</p>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-500">Status</h4>
+                    <StatusDropdownWithProof
+                      currentStatus={selectedComplaint.status?.toLowerCase().replace(' ', '-') || 'submitted'}
+                      complaintId={selectedComplaint.complaintId}
+                      userId={user?.id || 'admin'}
+                      onStatusUpdate={(newStatus: string) => handleStatusUpdate(selectedComplaint.complaintId, newStatus)}
+                    />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-500">Priority</h4>
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getPriorityColor(selectedComplaint.priority || '')}`}>
+                      {selectedComplaint.priority || 'Unknown'}
+                    </span>
                   </div>
                 </div>
                 
