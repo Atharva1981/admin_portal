@@ -31,6 +31,11 @@ export interface UserComplaint {
   address?: string;
   ward?: string;
   updatedAt?: any;
+  // Resolution proof fields
+  resolvedImageBase64?: string;
+  resolvedBy?: string;
+  resolvedAt?: any;
+  lastUpdateNotes?: string;
 }
 
 export interface ComplaintFilters {
@@ -125,7 +130,12 @@ export const fetchUserComplaints = async (options: FetchOptions = {}): Promise<U
         department: data.department || 'Not assigned',
         address: data.address || 'Address not provided',
         ward: data.ward || data.city || 'Unknown',
-        updatedAt: data.updatedAt || data.timeline?.lastUpdated
+        updatedAt: data.updatedAt || data.timeline?.lastUpdated,
+        // Resolution proof fields
+        resolvedImageBase64: data.resolvedImageBase64 || undefined,
+        resolvedBy: data.resolvedBy || undefined,
+        resolvedAt: data.resolvedAt || undefined,
+        lastUpdateNotes: data.lastUpdateNotes || undefined
       };
       
       complaints.push(complaint);
@@ -215,7 +225,12 @@ export const listenToUserComplaints = (
           department: data.department || 'Not assigned',
           address: data.address || 'Address not provided',
           ward: data.ward || data.city || 'Unknown',
-          updatedAt: data.updatedAt || data.timeline?.lastUpdated
+          updatedAt: data.updatedAt || data.timeline?.lastUpdated,
+          // Resolution proof fields
+          resolvedImageBase64: data.resolvedImageBase64 || undefined,
+          resolvedBy: data.resolvedBy || undefined,
+          resolvedAt: data.resolvedAt || undefined,
+          lastUpdateNotes: data.lastUpdateNotes || undefined
         };
         
         complaints.push(complaint);
