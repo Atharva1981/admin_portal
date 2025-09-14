@@ -1,26 +1,21 @@
-import admin from "firebase-admin";
-import fs from "fs";
-import csv from "csv-parser";
+import { initializeApp } from 'firebase/app';
+import { getFirestore, collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import fs from 'fs';
+import csv from 'csv-parser';
 
-// Initialize Firebase Admin with service account
-try {
-  const serviceAccount = JSON.parse(fs.readFileSync("./govtjharkhand-14a5e-firebase-adminsdk-fbsvc-aac052be8e.json", "utf8"));
-  
-  // Check if Firebase app is already initialized
-  if (!admin.apps.length) {
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount),
-      projectId: serviceAccount.project_id
-    });
-  }
-  
-  console.log("✅ Firebase Admin initialized successfully");
-} catch (error) {
-  console.error("❌ Failed to initialize Firebase Admin:", error.message);
-  process.exit(1);
-}
+// Firebase configuration (using client SDK instead of admin SDK)
+const firebaseConfig = {
+  apiKey: "AIzaSyAfcg3SH18uTmWdSsLloBlPCpdwUo9RSkE",
+  authDomain: "govtjharkhand-14a5e.firebaseapp.com",
+  projectId: "govtjharkhand-14a5e",
+  storageBucket: "govtjharkhand-14a5e.appspot.com",
+  messagingSenderId: "123456789",
+  appId: "1:123456789:web:abcdef"
+};
 
-const db = admin.firestore();
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
 // Path to your CSV
 const csvFilePath = "chinmayyy 5.csv";
@@ -53,21 +48,18 @@ fs.createReadStream(csvFilePath)
       const category = row.category || 'General';
       
       try {
-        // Create a unique document ID using city + category + pincode + index
-        const cleanCategory = category.replace(/[^a-zA-Z0-9]/g, '_');
-        const docId = `${row.city}_${cleanCategory}_${row.pincode || '000000'}_${i}`;
-        
         // Upload to Firestore with proper structure
-        const docRef = db.collection("civic_issues").doc(docId);
-        await docRef.set({
+        const docData = {
           city: row.city,
           category: category,
           pincode: row.pincode || '000000',
           department: row.department || 'Not specified',
           higher_authority: row.higher_authority || 'Not specified',
-          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          createdAt: serverTimestamp(),
           status: "active" // default status
-        });
+        };
+        
+        await addDoc(collection(db, "civic_issues"), docData);
         
         uploadCount++;
         console.log(`✅ Uploaded: ${row.city} - ${category} (${uploadCount})`);
@@ -83,6 +75,6 @@ fs.createReadStream(csvFilePath)
     process.exit(0);
   })
   .on("error", (error) => {
-    console.error("❌ Error reading CSV file:", error);
+    console.error("❌ Error reading CSV file:", error.message);
     process.exit(1);
   });

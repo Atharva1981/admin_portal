@@ -284,28 +284,28 @@ const determinePriority = (category: string, description: string): 'Low' | 'Medi
  */
 const calculateSLADeadline = (department: string, priority: 'Low' | 'Medium' | 'High'): Timestamp => {
   const now = new Date();
-  let hoursToAdd = 72; // Default 72 hours (3 days)
+  let secondsToAdd = 48; // Default 48 seconds
   
   // Adjust based on priority
   switch (priority) {
     case 'High':
-      hoursToAdd = 24; // 1 day
+      secondsToAdd = 24; // 24 seconds
       break;
     case 'Medium':
-      hoursToAdd = 48; // 2 days
+      secondsToAdd = 48; // 48 seconds
       break;
     case 'Low':
-      hoursToAdd = 72; // 3 days
+      secondsToAdd = 48; // 48 seconds
       break;
   }
   
   // Further adjust based on department type
   const urgentDepartments = ['Water Department', 'Electricity Department', 'Emergency Services'];
   if (urgentDepartments.some(dept => department.includes(dept))) {
-    hoursToAdd = Math.max(hoursToAdd - 12, 12); // Reduce by 12 hours, minimum 12 hours
+    secondsToAdd = Math.max(secondsToAdd - 12, 12); // Reduce by 12 seconds, minimum 12 seconds
   }
   
-  const deadline = new Date(now.getTime() + (hoursToAdd * 60 * 60 * 1000));
+  const deadline = new Date(now.getTime() + (secondsToAdd * 1000));
   return Timestamp.fromDate(deadline);
 };
 

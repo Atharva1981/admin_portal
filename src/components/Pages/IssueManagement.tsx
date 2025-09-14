@@ -5,12 +5,17 @@ import { mockIssues } from '../../data/mockData';
 import { Issue, User } from '../../types';
 import { fetchUserComplaints, UserComplaint } from '../../services/userComplaintsService';
 import { mapComplaintToDepartmentFrontend, DepartmentMappingResult } from '../../services/departmentMappingService';
+import { fetchDepartmentsByCity, CityDepartment } from '../../services/cityDepartmentService';
+import { useAuth } from '../../contexts/AuthContext';
 
 const IssueManagement: React.FC = () => {
-  const [issues] = useState<Issue[]>(mockIssues);
+  const { user } = useAuth();
   const [userComplaints, setUserComplaints] = useState<UserComplaint[]>([]);
   const [departmentMappings, setDepartmentMappings] = useState<Map<string, DepartmentMappingResult>>(new Map());
+  const [cityDepartments, setCityDepartments] = useState<CityDepartment[]>([]);
+  const [selectedDepartment, setSelectedDepartment] = useState<string>('');
   const [loadingComplaints, setLoadingComplaints] = useState(false);
+  const [loadingDepartments, setLoadingDepartments] = useState(false);
   const [mappingLoading, setMappingLoading] = useState(false);
   const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -48,38 +53,60 @@ const IssueManagement: React.FC = () => {
     { id: 'USER-005', name: 'Lisa Brown', email: 'lisa@sanitation.gov', role: 'Staff', department: 'Sanitation Department' }
   ];
 
-  // Fetch user complaints on component mount
+  // Load city departments when user city changes
   useEffect(() => {
-    const loadUserComplaints = async () => {
+    const loadCityDepartments = async () => {
+      if (!user?.city) return;
+      
+      setLoadingDepartments(true);
+      try {
+        const departments = await fetchDepartmentsByCity(user.city);
+        setCityDepartments(departments);
+      } catch (error) {
+        console.error('Error loading city departments:', error);
+      } finally {
+        setLoadingDepartments(false);
+      }
+    };
+
+    loadCityDepartments();
+  }, [user?.city]);
+
+  // Load user complaints filtered by city
+  useEffect(() => {
+    const loadComplaints = async () => {
       setLoadingComplaints(true);
       try {
-        console.log('🔍 Fetching user complaints...');
-        const complaints = await fetchUserComplaints();
-        console.log('📊 Raw complaints data:', complaints);
-        setUserComplaints(complaints);
-        console.log('✅ Loaded user complaints:', complaints.length);
+        const complaints = await fetchUserComplaints({ limitCount: 100 });
+        console.log('🔍 All complaints loaded:', complaints.length);
+        console.log('👤 Current user city:', user?.city);
         
-        // Log each complaint for debugging
-        complaints.forEach((complaint, index) => {
-          console.log(`📋 Complaint ${index + 1}:`, {
-            id: complaint.complaintId,
-            category: complaint.category,
-            city: complaint.city,
-            user: complaint.userName
-          });
-        });
+        // Filter complaints by user's city if not Super Admin
+        const filteredComplaints = user?.role === 'Super Admin' 
+          ? complaints 
+          : complaints.filter(complaint => {
+              // For city admins, only show complaints from their city
+              if (user?.city) {
+                console.log(`📍 Comparing complaint city "${complaint.city}" with user city "${user.city}"`);
+                return complaint.city === user.city;
+              }
+              // Fallback: if no city assigned, show no complaints
+              return false;
+            });
+        
+        console.log('✅ Filtered complaints for city:', filteredComplaints.length);
+        setUserComplaints(filteredComplaints);
       } catch (error) {
-        console.error('❌ Error loading user complaints:', error);
-        // If there's an error, try to use mock data as fallback
-        console.log('🔄 Using mock data as fallback...');
-        setUserComplaints([]);
+        console.error('Error loading user complaints:', error);
       } finally {
         setLoadingComplaints(false);
       }
     };
-    
-    loadUserComplaints();
-  }, []);
+
+    if (user) {
+      loadComplaints();
+    }
+  }, [user?.city, user?.role]);
 
   // Force refresh function
   const handleRefresh = async () => {
@@ -88,8 +115,23 @@ const IssueManagement: React.FC = () => {
     try {
       console.log('🔄 Force refreshing complaints...');
       const complaints = await fetchUserComplaints();
-      setUserComplaints(complaints);
-      console.log('✅ Refreshed user complaints:', complaints.length);
+      console.log('🔄 Refresh - All complaints:', complaints.length);
+      console.log('👤 Refresh - Current user city:', user?.city);
+      
+      // Apply same city filtering on refresh
+      const filteredComplaints = user?.role === 'Super Admin' 
+        ? complaints 
+        : complaints.filter(complaint => {
+            if (user?.city) {
+              console.log(`🔄 Refresh - Comparing complaint city "${complaint.city}" with user city "${user.city}"`);
+              return complaint.city === user.city;
+            }
+            return false;
+          });
+      
+      console.log('🔄 Refresh - Filtered complaints:', filteredComplaints.length);
+      setUserComplaints(filteredComplaints);
+      console.log('✅ Refreshed user complaints:', filteredComplaints.length);
     } catch (error) {
       console.error('❌ Error refreshing complaints:', error);
     } finally {
@@ -143,29 +185,24 @@ const IssueManagement: React.FC = () => {
 
   // Filter user complaints based on search and filters
   const filteredComplaints = useMemo(() => {
-    let filtered = userComplaints;
-
-    // Apply search filter
-    if (searchTerm) {
-      filtered = filtered.filter(complaint =>
-        complaint.complaintId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        complaint.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        complaint.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        complaint.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        complaint.userName.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-
-    // Apply other filters
-    if (filters.category && filters.category !== 'All') {
-      filtered = filtered.filter(complaint => complaint.category === filters.category);
-    }
-    if (filters.location && filters.location !== 'All') {
-      filtered = filtered.filter(complaint => complaint.city === filters.location);
-    }
-
-    return filtered;
-  }, [userComplaints, searchTerm, filters]);
+    return userComplaints.filter(complaint => {
+      const departmentMapping = departmentMappings.get(complaint.complaintId);
+      
+      const matchesSearch = !searchTerm || 
+        complaint.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        complaint.category?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        complaint.city?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        complaint.userName?.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchesCategory = !filters.category || 
+        complaint.category === filters.category;
+      
+      const matchesDepartment = !selectedDepartment || 
+        departmentMapping?.department === selectedDepartment;
+      
+      return matchesSearch && matchesCategory && matchesDepartment;
+    });
+  }, [userComplaints, searchTerm, filters, selectedDepartment, departmentMappings]);
 
   const handleIssueClick = (issue: Issue) => {
     setSelectedIssue(issue);
@@ -217,16 +254,22 @@ const IssueManagement: React.FC = () => {
             ))}
           </select>
 
-          {/* City Filter */}
+          {/* Department Filter */}
           <select
             className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            value={filters.location}
-            onChange={(e) => setFilters({ ...filters, location: e.target.value })}
+            value={selectedDepartment}
+            onChange={(e) => setSelectedDepartment(e.target.value)}
           >
-            <option value="">City</option>
-            {Array.from(new Set(userComplaints.map(c => c.city))).sort().map(city => (
-              <option key={city} value={city}>{city}</option>
-            ))}
+            <option value="">All Departments</option>
+            {loadingDepartments ? (
+              <option disabled>Loading departments...</option>
+            ) : (
+              cityDepartments.map(dept => (
+                <option key={dept.id} value={dept.department}>
+                  {dept.department}
+                </option>
+              ))
+            )}
           </select>
 
           {/* Refresh Button */}

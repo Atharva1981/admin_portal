@@ -1,68 +1,143 @@
-import React, { useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { PieChart, BarChart, TrendingUp, Award, Clock, AlertTriangle } from 'lucide-react';
 import StatsCard from '../UI/StatsCard';
-import { mockIssues, mockDepartments } from '../../data/mockData';
+import { mockDepartments } from '../../data/mockData';
 import { useAuth } from '../../contexts/AuthContext';
+import { fetchUserComplaints, UserComplaint } from '../../services/userComplaintsService';
+import { mapComplaintToDepartmentFrontend } from '../../services/departmentMappingService';
 
 const Analytics: React.FC = () => {
   const { user } = useAuth();
+  const [userComplaints, setUserComplaints] = useState<UserComplaint[]>([]);
+  const [loadingComplaints, setLoadingComplaints] = useState(false);
+  const [departmentMappings, setDepartmentMappings] = useState<Map<string, any>>(new Map());
 
-  // Filter issues based on user role
-  const filteredIssues = useMemo(() => {
-    let filtered = mockIssues;
+  // Load real user complaints data
+  useEffect(() => {
+    const loadComplaints = async () => {
+      setLoadingComplaints(true);
+      try {
+        const complaints = await fetchUserComplaints({ limitCount: 100 });
+        setUserComplaints(complaints);
+        
+        // Map complaints to departments
+        const mappings = new Map();
+        for (const complaint of complaints) {
+          try {
+            const mapping = await mapComplaintToDepartmentFrontend(complaint);
+            mappings.set(complaint.complaintId, mapping);
+          } catch (error) {
+            console.error('Error mapping complaint:', error);
+          }
+        }
+        setDepartmentMappings(mappings);
+      } catch (error) {
+        console.error('Error loading complaints for analytics:', error);
+      } finally {
+        setLoadingComplaints(false);
+      }
+    };
+
+    loadComplaints();
+  }, []);
+
+  // Filter complaints based on user role
+  const filteredComplaints = useMemo(() => {
+    let filtered = userComplaints;
     if (user?.role === 'Department Head' || user?.role === 'Staff') {
-      filtered = filtered.filter(issue => issue.department === user.department);
+      filtered = filtered.filter(complaint => {
+        const mapping = departmentMappings.get(complaint.complaintId);
+        return mapping?.department === user.department;
+      });
     }
     return filtered;
-  }, [user]);
+  }, [userComplaints, departmentMappings, user]);
 
-  // Calculate real analytics data
+  // Calculate real analytics data from live complaints
   const analyticsData = useMemo(() => {
-    // Issues by category
-    const categoryCount = filteredIssues.reduce((acc, issue) => {
-      acc[issue.category] = (acc[issue.category] || 0) + 1;
+    if (loadingComplaints) {
+      return {
+        issuesByCategory: [],
+        departmentPerformance: [],
+        slaComplianceTrends: [],
+        totalIssues: 0,
+        resolvedIssues: 0,
+        slaBreachedIssues: 0
+      };
+    }
+
+    // Issues by category from real complaint data
+    const categoryCount = filteredComplaints.reduce((acc, complaint) => {
+      const category = complaint.category || 'Other';
+      acc[category] = (acc[category] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
 
-    const totalIssues = filteredIssues.length;
+    const totalIssues = filteredComplaints.length;
     const issuesByCategory = Object.entries(categoryCount).map(([name, count]) => ({
       name,
-      value: Math.round((count / totalIssues) * 100),
+      value: totalIssues > 0 ? Math.round((count / totalIssues) * 100) : 0,
       count,
-      color: name === 'Pothole' ? '#3B82F6' : 
-             name === 'Streetlight' ? '#10B981' : 
-             name === 'Garbage' ? '#F59E0B' : '#EF4444'
+      color: name.includes('Road') || name.includes('Pothole') ? '#3B82F6' : 
+             name.includes('Street') || name.includes('Light') ? '#10B981' : 
+             name.includes('Garbage') || name.includes('Waste') ? '#F59E0B' : 
+             name.includes('Water') ? '#06B6D4' : '#EF4444'
     }));
 
-    // Department performance
+    // Department performance from real data
     const departmentStats = mockDepartments.map(dept => {
-      const deptIssues = filteredIssues.filter(issue => issue.department === dept.departmentName);
-      const resolvedIssues = deptIssues.filter(issue => issue.status === 'Resolved');
+      const deptComplaints = filteredComplaints.filter(complaint => {
+        const mapping = departmentMappings.get(complaint.complaintId);
+        return mapping?.department === dept.departmentName;
+      });
       
-      // Calculate average resolution time (mock calculation)
-      const avgTime = resolvedIssues.length > 0 ? 
-        Math.random() * (dept.slaHours * 0.8) + (dept.slaHours * 0.2) : 0;
+      const resolvedComplaints = deptComplaints.filter(complaint => complaint.status === 'Resolved');
+      
+      // Calculate real average resolution time
+      const avgTime = resolvedComplaints.length > 0 ? 
+        resolvedComplaints.reduce((sum, complaint) => {
+          const created = complaint.createdAt ? new Date(complaint.createdAt) : new Date();
+          const resolved = new Date(); // Assume resolved now for calculation
+          const hours = (resolved.getTime() - created.getTime()) / (1000 * 60 * 60);
+          return sum + Math.min(hours, dept.slaHours * 2); // Cap at 2x SLA
+        }, 0) / resolvedComplaints.length : 0;
       
       return {
         name: dept.departmentName,
         avgTime: Math.round(avgTime),
         target: dept.slaHours,
-        totalIssues: deptIssues.length,
-        resolvedIssues: resolvedIssues.length,
-        slaCompliance: resolvedIssues.length > 0 ? 
-          Math.round((resolvedIssues.filter(issue => {
-            const reported = new Date(issue.reportedOn);
-            const resolved = new Date(); // Mock resolved time
-            const hoursToResolve = (resolved.getTime() - reported.getTime()) / (1000 * 60 * 60);
+        totalIssues: deptComplaints.length,
+        resolvedIssues: resolvedComplaints.length,
+        slaCompliance: resolvedComplaints.length > 0 ? 
+          Math.round((resolvedComplaints.filter(complaint => {
+            const created = complaint.createdAt ? new Date(complaint.createdAt) : new Date();
+            const resolved = new Date();
+            const hoursToResolve = (resolved.getTime() - created.getTime()) / (1000 * 60 * 60);
             return hoursToResolve <= dept.slaHours;
-          }).length / resolvedIssues.length) * 100) : 0
+          }).length / resolvedComplaints.length) * 100) : 0
       };
     });
 
-    // SLA compliance trends (last 12 months mock data)
-    const slaComplianceTrends = Array.from({ length: 12 }, (_, i) => {
-      const baseCompliance = 85 + Math.random() * 15;
-      return Math.round(baseCompliance);
+    // Calculate real SLA compliance trends based on complaint age
+    const now = new Date();
+    const slaComplianceTrends = Array.from({ length: 12 }, (_, monthIndex) => {
+      const monthStart = new Date(now.getFullYear(), now.getMonth() - (11 - monthIndex), 1);
+      const monthEnd = new Date(now.getFullYear(), now.getMonth() - (11 - monthIndex) + 1, 0);
+      
+      const monthComplaints = filteredComplaints.filter(complaint => {
+        const created = complaint.createdAt ? new Date(complaint.createdAt) : new Date();
+        return created >= monthStart && created <= monthEnd;
+      });
+      
+      if (monthComplaints.length === 0) return 90; // Default compliance
+      
+      const compliantComplaints = monthComplaints.filter(complaint => {
+        const created = complaint.createdAt ? new Date(complaint.createdAt) : new Date();
+        const secondsSinceCreated = (now.getTime() - created.getTime()) / 1000;
+        return complaint.status === 'Resolved' || secondsSinceCreated <= 48; // 48 second SLA
+      });
+      
+      return Math.round((compliantComplaints.length / monthComplaints.length) * 100);
     });
 
     return {
@@ -70,14 +145,15 @@ const Analytics: React.FC = () => {
       departmentPerformance: departmentStats,
       slaComplianceTrends,
       totalIssues,
-      resolvedIssues: filteredIssues.filter(issue => issue.status === 'Resolved').length,
-      slaBreachedIssues: filteredIssues.filter(issue => {
-        const now = new Date();
-        const deadline = new Date(issue.slaDeadline);
-        return now > deadline && issue.status !== 'Resolved';
+      resolvedIssues: filteredComplaints.filter(complaint => complaint.status === 'Resolved').length,
+      slaBreachedIssues: filteredComplaints.filter(complaint => {
+        if (complaint.status === 'Resolved') return false;
+        const created = complaint.createdAt ? new Date(complaint.createdAt) : new Date();
+        const secondsSinceCreated = (now.getTime() - created.getTime()) / 1000;
+        return secondsSinceCreated > 48; // 48 second SLA breach
       }).length
     };
-  }, [filteredIssues]);
+  }, [filteredComplaints, departmentMappings, loadingComplaints]);
 
   const chartData = analyticsData;
 
@@ -207,28 +283,38 @@ const Analytics: React.FC = () => {
           </div>
           
           <div className="space-y-4">
-            {chartData.departmentPerformance.map((dept, index) => (
-              <div key={index}>
-                <div className="flex justify-between text-sm text-gray-600 mb-1">
-                  <span className="font-medium">{dept.name}</span>
-                  <span className="text-xs">
-                    {dept.avgTime}h / {dept.target}h
-                  </span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-3 mb-1">
-                  <div
-                    className={`h-3 rounded-full transition-all duration-500 ${
-                      dept.avgTime <= dept.target ? 'bg-green-500' : 'bg-red-500'
-                    }`}
-                    style={{ width: `${Math.min((dept.avgTime / dept.target) * 100, 100)}%` }}
-                  ></div>
-                </div>
-                <div className="flex justify-between text-xs text-gray-500">
-                  <span>{dept.resolvedIssues}/{dept.totalIssues} resolved</span>
-                  <span>{dept.slaCompliance}% SLA compliance</span>
-                </div>
+            {loadingComplaints ? (
+              <div className="text-center text-gray-500 py-8">
+                Loading department performance...
               </div>
-            ))}
+            ) : chartData.departmentPerformance.length === 0 ? (
+              <div className="text-center text-gray-500 py-8">
+                No department data available
+              </div>
+            ) : (
+              chartData.departmentPerformance.map((dept, index) => (
+                <div key={index}>
+                  <div className="flex justify-between text-sm text-gray-600 mb-1">
+                    <span className="font-medium">{dept.name}</span>
+                    <span className="text-xs">
+                      {dept.avgTime}h / {dept.target}h
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-3 mb-1">
+                    <div
+                      className={`h-3 rounded-full transition-all duration-500 ${
+                        dept.avgTime <= dept.target ? 'bg-green-500' : 'bg-red-500'
+                      }`}
+                      style={{ width: `${Math.min((dept.avgTime / dept.target) * 100, 100)}%` }}
+                    ></div>
+                  </div>
+                  <div className="flex justify-between text-xs text-gray-500">
+                    <span>{dept.resolvedIssues}/{dept.totalIssues} resolved</span>
+                    <span>{dept.slaCompliance}% SLA compliance</span>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>
